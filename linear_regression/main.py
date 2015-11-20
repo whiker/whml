@@ -1,23 +1,40 @@
 #coding=utf-8
 
+import copy
 import math
+import matplotlib.pyplot as plt
 import numpy as np
 import random as rand
 
 
 # 全局变量
-IterNum = 30
-alpha = 0.05
-TrueTheta = [ 1, 2 ]
+IterNum = 10
+alpha = 0.0001
+TrueTheta = [ 1, 5 ]
 Xmin = [ 0 ]
 Xmax = [ 100 ]
-Hrand = 0
-Nsample = 40
+Hrand = 50
+Nsample = 100
 
 
 # 函数
 def randRange(dmin, dmax):
-	return ( dmin + rand.random() * (dmax-dmin) );
+	return ( dmin + rand.random() * (dmax-dmin) )
+
+def show(x_mat, y_vec, theta, errors):
+	if len(x_mat) == 2:
+		plt.plot(x_mat[1], y_vec, 'b*')
+		x1 = [ 1, Xmin[0] ]
+		x2 = [ 1, Xmax[0] ]
+		x = np.array([x1, x2])
+		y = np.dot(x, theta)
+		plt.plot([x1[1], x2[1]], y, 'r')
+		plt.xlim(Xmin[0], Xmax[0])
+		plt.show()
+		plt.plot(range(IterNum), errors, 'b*')
+		plt.plot(range(IterNum), errors, 'r')
+		plt.xlim(0, IterNum)
+		plt.show()
 
 def produceOriginalTrainData():
 	x_mat = []
@@ -35,8 +52,9 @@ def produceOriginalTrainData():
 
 def normalize(x_mat, y_vec):
 	# 计算每行(各维度)的均值和尺度
-	x_mean = np.mean(x_mat, 1)
+	x_mean  = np.mean(x_mat, 1)
 	x_scale = np.max(x_mat, 1) - np.min(x_mat, 1)
+	# 去均值和尺度
 	n = len(x_mat)
 	for i in xrange(1,n):
 		x_mat[i] = (x_mat[i] - x_mean[i]) / x_scale[i]
@@ -44,27 +62,40 @@ def normalize(x_mat, y_vec):
 
 def calcErrVec(x_mat, y_vec, theta):
 	err_vec = np.dot(theta, x_mat) - y_vec
-	print math.sqrt( np.dot(err_vec, err_vec) / Nsample )
-	return err_vec
+	error = math.sqrt( np.dot(err_vec, err_vec) / Nsample )
+	return err_vec, error
 
-def gradientDescent(x_mat, y_vec, theta):
-	err_vec = calcErrVec(x_mat, y_vec, theta)
-	d_theta_vec = np.dot(x_mat, err_vec) / Nsample
-	d_theta_vec *= alpha
-	return (theta - d_theta_vec)
+def gradientDescent(x_mat, y_vec, theta, errors):
+	err_vec, error = calcErrVec(x_mat, y_vec, theta)
+	errors.append(error)
+	d_theta_vec = np.dot(x_mat, err_vec)
+	d_theta_vec *= (alpha / Nsample)
+	theta -= d_theta_vec
 
 
 if __name__ == "__main__":
 	#训练数据
 	x_mat, y_vec = produceOriginalTrainData()
-	x_mean, x_scale = normalize(x_mat, y_vec)
+	x_mat_ori = copy.deepcopy(x_mat)
+	# x_mean, x_scale = normalize(x_mat, y_vec)
 	
 	# 初始值
 	theta = np.zeros(len(TrueTheta))
+	errors = []
 	
 	# 迭代
 	for i in xrange(IterNum):
-		theta = gradientDescent(x_mat, y_vec, theta)
+		gradientDescent(x_mat, y_vec, theta, errors)
 	
 	calcErrVec(x_mat, y_vec, theta)
+	
+	'''
+	t = theta[0]
+	for i in xrange(1, len(TrueTheta)):
+		theta[i] /= x_scale[i]
+		t -= (theta[i] * x_mean[i])
+	theta[0] = t
+	#'''
+	
 	print theta
+	show(x_mat_ori, y_vec, theta, errors)
