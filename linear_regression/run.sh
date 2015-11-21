@@ -1,4 +1,4 @@
 #! /bin/sh
 
 clear
-python main.py
+python gradient_descent.py
