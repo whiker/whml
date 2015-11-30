@@ -6,7 +6,7 @@ import numpy as np
 import random as rand
 
 
-TrueTheta = [ 1, 5, 100, 7 ]
+TrueTheta = [ 2, 5, 100, 7 ]
 Xmin = [ 0, 0, 0 ]
 Xmax = [ 100, 30, 200 ]
 Hrand = 50
@@ -31,6 +31,8 @@ def produceSampleData():
 		x_mat.append(x)
 		y_vec.append(h)
 	x_mat = np.transpose(x_mat)  # 每列是一个样本
+	x_mat = np.float32(x_mat)
+	y_vec = np.float32(y_vec)
 	return np.array(x_mat), np.array(y_vec)
 
 
@@ -45,6 +47,15 @@ def adjustSampleScale(x_mat):
 	for i in xrange(1,n):
 		x_mat[i] = (x_mat[i] - x_shift[i]) / x_scale[i]
 	return x_shift, x_scale
+
+
+# 调整结果 theta
+def adjustTheta(x_shift, x_scale, theta):
+	t = theta[0]
+	for i in xrange(1, len(theta)):
+		theta[i] /= x_scale[i]
+		t -= (theta[i] * x_shift[i])
+	theta[0] = t
 
 
 # 显示回归结果

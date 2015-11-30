@@ -2,6 +2,6 @@
 
 clear
 
-python gradient_descent.py
+python tf_lr.py
 
 rm *.pyc

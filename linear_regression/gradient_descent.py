@@ -53,11 +53,7 @@ if __name__ == "__main__":
 	calcErrVec(x_mat, y_vec, theta)
 	
 	# 调整 theta
-	t = theta[0]
-	for i in xrange(1, len(theta)):
-		theta[i] /= x_scale[i]
-		t -= (theta[i] * x_shift[i])
-	theta[0] = t
+	lr_base.adjustTheta(x_shift, x_scale, theta)
 	print theta
 	
 	lr_base.showLrLine(x_mat_ori, y_vec, theta)
