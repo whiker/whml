@@ -4,4 +4,4 @@ clear
 
 python fit_poly.py
 
-rm *.pyc
+rm -f *.pyc

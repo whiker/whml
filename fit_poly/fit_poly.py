@@ -3,57 +3,21 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
 import tensorflow as tf
 
-import data_file as df
+import point_file as ptfile
+import data_file as dfile
 
 
-def readPoints(filename):
-	f = open(filename, 'r')
-	
-	line = f.readline()
-	if not line:
-		print "%s文件, 空数据" %(filename)
-		return -1, 0, 0, 0, 0
-	lines = line.strip().split('\t')
-	if len(lines) != 2:
-		print "%s文件, 首行格式错误: %s" %(filename, line)
-		return -1, 0, 0, 0, 0
-	nRow = int(lines[0])
-	nCol = int(lines[1])
-	ptx = []
-	pty = []
-	
-	for i in xrange(0, nRow):
-		line = f.readline()
-		if not line:
-			print "行不足: %d<%d" %(i, nRow)
-			return -2, nRow, nCol, ptx, pty
-		lines = line.strip().split('\t')
-		if len(lines) != 2*nCol:
-			print "第%d行,列不足: %d<%d" %(i, len(lines), 2*nCol)
-			return -1, nRow, nCol, ptx, pty
-		
-		x = []
-		y = []
-		for j in xrange(0, nCol):
-			x.append(int(lines[2*j]))
-			y.append(-int(lines[2*j+1]))
-		ptx.append(x)
-		pty.append(y)
-	
-	f.close()
-	return 0, nRow, nCol, ptx, pty
-
-
-def normal(data):  #每列是一个样本数据, 有多少列就有多少个样本
-	shift = np.min(data, 1)  #计算每行(各维度)的最小值
+# 对数据作归一化
+# 每列是一个样本数据, 有多少列就有多少个样本
+def normal(data):
+	shift = np.min(data, 1)  # 计算每行(各维度)的最小值
 	scale = np.max(data, 1) - np.min(data, 1)
 	scale *= 0.5
 	shift += scale
-	scale /= 2  #映射到[-2, 2]
-	for i in xrange(1, len(data)):  #对每行处理
+	scale /= 2  # 映射到[-2, 2]
+	for i in xrange(1, len(data)):  # 对每行处理
 		data[i] = (data[i] - shift[i]) / scale[i]
 	return shift, scale
 
@@ -81,7 +45,7 @@ def tfTrain(data_x, data_y):
 	init = tf.initialize_all_variables()
 	sess = tf.Session()
 	sess.run(init)
-	for iter in xrange(0, 1000):
+	for iter in xrange(0, 5000):
 		sess.run(train)
 		#print tf_w.eval(sess)[0]
 	
@@ -90,9 +54,10 @@ def tfTrain(data_x, data_y):
 	return adjustWeight(shift, scale, weight)
 
 
+# 拟合多项式
 def fitPoly(x, y, nPoly):
 	if nPoly < 1:
-		print "多项式次数错误: %d<1" %(nPoly)
+		print "fitPoly() >> 多项式次数错误: %d<1" %(nPoly)
 		return
 	x = np.float32(x)
 	
@@ -118,45 +83,108 @@ def calcPolyValue(x, coeff):
 	return y
 
 
-def plotFitResult(x, y, coeff, xySwap):
-	tx = range(np.min(x)-10, np.max(x)+10)
+def plotFitResult(x, y, coeff, flag=None, color='b'):
+	if len(x) < 1:
+		print 'plotFitResult() >> 空数据'
+		return
+	if len(y) != len(x):
+		print 'plotFitResult() >> x和y的维度不一致'
+		return
+	limit1 = int(np.min(x)) - 10
+	limit2 = int(np.max(x)) + 10
+	tx = range(limit1, limit2)
 	ty = []
 	for i in xrange(0, len(tx)):
 		ty.append( calcPolyValue(tx[i], coeff) )
-	if not xySwap:
-		plt.plot(x, y, 'b.')
+	if flag == None:
+		plt.plot(x, y, color+'.')
 		plt.plot(tx, ty, 'r')
 	else:
-		plt.plot(y, x, 'b.')
-		plt.plot(ty, tx, 'r')
+		x1 = [-x[i] for i in xrange(len(x))]
+		tx1 = [-tx[i] for i in xrange(len(tx))]
+		plt.plot(y, x1, color+'.')
+		plt.plot(ty, tx1, 'r')
+
+
+# 计算行抛物线与每个列抛物线的交点
+def calcRowCrossPoints(coeff, colCoeff, xMin, xMax, step=0.05):
+	ptx = []
+	x = np.linspace(xMin, xMax, 1+(xMax-xMin)/step)
+	col = 0
+	errPrev = float('inf')
+	for i in xrange(len(x)):
+		y = calcPolyValue(x[i], coeff)
+		err = abs(calcPolyValue(-y, colCoeff[col]) - x[i])
+		if err < errPrev:
+			errPrev = err
+		else:
+			ptx.append(x[i-1])
+			col += 1
+			if col == len(colCoeff):
+				break
+			errPrev = abs(calcPolyValue(y, colCoeff[col]) + x[i])
+	return ptx
+
+
+def calcCoeff():
+	ret, nRow, nCol, ptx, pty = ptfile.loadPoints('data/all_pts.txt')
+	if ret != 0:
+		print 'calcCoeff() >> 读取数据失败'
+		return
+	
+	nPoly = 2  # 抛物线
+	rowCoeff = []
+	colCoeff = []
+	
+	for i in xrange(nRow):
+		coeff = fitPoly(ptx[i], pty[i], nPoly)
+		plotFitResult(ptx[i], pty[i], coeff)
+		rowCoeff.append(coeff)
+		print i
+	dfile.saveMatrix(rowCoeff, 'data/row_coeff.txt')
+	
+	ptx1 = -np.transpose(pty)
+	pty1 = np.transpose(ptx)
+	for i in xrange(nCol):
+		coeff = fitPoly(ptx1[i], pty1[i], nPoly)
+		plotFitResult(ptx1[i], pty1[i], coeff, 1)
+		colCoeff.append(coeff)
+		print i
+	dfile.saveMatrix(colCoeff, 'data/col_coeff.txt')
+	
+	plt.xlim(50, 650)
+	plt.ylim(-400, -150)
+	plt.show()
+
+
+def calcTruePoints():
+	ret, rowCoeff, nRow, _ = dfile.loadMatrix('data/row_coeff.txt', float)
+	ret, colCoeff, nCol, _ = dfile.loadMatrix('data/col_coeff.txt', float)
+	
+	xLimit = [50, 650]
+	ptxs = []
+	ptys = []
+	
+	for i in xrange(nRow):
+		ptx = calcRowCrossPoints(rowCoeff[i], colCoeff, xLimit[0], xLimit[1])
+		if len(ptx) != nCol:
+			print "calcTruePoints() >> 第%d行的交叉点数: %d<%d" %(i, len(ptx), nCol)
+		pty = [calcPolyValue(x, rowCoeff[i]) for x in ptx]
+		plotFitResult(ptx, pty, rowCoeff[i], None, 'g')
+		ptxs.append(ptx)
+		ptys.append(pty)
+	ptfile.savePoints(ptxs, ptys, 'data/true_pts.txt')
+	
+	ptxs1 = -np.transpose(ptys)
+	ptys1 = np.transpose(ptxs)
+	for i in xrange(nCol):
+		plotFitResult(ptxs1[i], ptys1[i], colCoeff[i], 1, 'g')
+	
+	plt.xlim(50, 650)
+	plt.ylim(-400, -150)
+	plt.show()
 
 
 if __name__ == '__main__':
-	# 读取数据
-	ret, nRow, nCol, ptx, pty = readPoints('all_pts.txt')
-	if ret != 0:
-		sys.exit(1)
-	
-	nPoly = 2
-	
-	rowCoeff = []
-	for row in xrange(nRow):
-		coeff = fitPoly(ptx[row], pty[row], nPoly)
-		plotFitResult(ptx[row], pty[row], coeff, False)
-		rowCoeff.append(coeff)
-		print row
-	df.saveMatrix(rowCoeff, "row_coeff.txt")
-	
-	colCoeff = []
-	ptx = np.transpose(ptx)
-	pty = np.transpose(pty)
-	for col in xrange(nCol):
-		coeff = fitPoly(pty[col], ptx[col], nPoly)
-		plotFitResult(pty[col], ptx[col], coeff, True)
-		colCoeff.append(coeff)
-		print col
-	df.saveMatrix(colCoeff, "col_coeff.txt")
-	
-	plt.xlim(50, 650)
-	plt.ylim(-450, -200)
-	plt.show()
+	#calcCoeff()
+	calcTruePoints()
