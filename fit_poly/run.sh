@@ -2,6 +2,6 @@
 
 clear
 
-python fit_poly.py
+python $1
 
 rm -f *.pyc
