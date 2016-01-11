@@ -23,9 +23,14 @@ def solveQuadraticEquation(coeff1, coeff2):
 	if abs(a) < 1e-10:
 		print 'solveQuadraticEquation() >> 方程无解'
 		return None, None
-	p = math.sqrt( (b*b - 4*a*c) / (4*a*a) )
-	q = -0.5 * b / a
-	return q-p, q+p
+	delta = b*b - 4*a*c
+	if delta < -1e-6:
+		print 'solveQuadraticEquation() >> delta < 0'
+		return None, None
+	delta = math.sqrt(delta)
+	x1, x2 = -b+delta, -b-delta
+	p = 2 * a
+	return x1/p, x2/p
 
 
 # 两个抛物线的交点

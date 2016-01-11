@@ -3,14 +3,13 @@
 
 def saveMatrix(data, filename):
 	nRow = len(data)
-	if nRow <= 0:
-		print 'saveMatrix() >> 空数据: nRow<=0'
+	if nRow < 1:
+		print 'saveMatrix() >> 空数据: nRow<1'
 		return -1
 	nCol = len(data[0])
-	if nCol <= 0:
-		print 'saveMatrix() >> 空数据: nCol<=0'
+	if nCol < 1:
+		print 'saveMatrix() >> 空数据: nCol<1'
 		return -1
-	
 	f = open(filename, 'w')
 	f.write(str(nRow) + '\t' + str(nCol) + '\r\n')
 	for i in xrange(nRow):
@@ -54,3 +53,16 @@ def loadMatrix(filename, dataType):
 				rowData.append(float(lines[j]))
 		data.append(rowData)
 	return 0, data, nRow, nCol
+
+
+def saveVector(data, filename):
+	n = len(data)
+	if n < 1:
+		print 'saveVector() >> 空数据'
+		return -1
+	f = open(filename, 'w')
+	f.write(str(n) + '\r\n')
+	f.write(str(data[0]))
+	for i in xrange(1, n):
+		f.write('\t' + str(data[i]))
+	f.close()

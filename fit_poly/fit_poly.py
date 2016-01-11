@@ -27,7 +27,7 @@ def fitPoly(x, y, nPoly):
 	
 	data_x = np.array(np.float32(data_x))
 	data_y = np.array(np.float32(y))
-	return tfu.tfTrain(data_x, data_y, 5000)
+	return tfu.linearRegression(data_x, data_y, 5000, 0.1, 100)
 
 
 def plotFitResult(x, y, coeff, flag=None, color='b', limit1=None, limit2=None):
@@ -56,7 +56,7 @@ def plotFitResult(x, y, coeff, flag=None, color='b', limit1=None, limit2=None):
 
 
 # 行抛物线与每个列抛物线的交点
-def rowCrossPoints(coeff, colCoeff, xMin, xMax, step=0.05):
+def rowCrossPoints(coeff, colCoeff, xMin, xMax, step=0.01):
 	ptx = []
 	x = np.linspace(xMin, xMax, 1+(xMax-xMin)/step)
 	col = 0
@@ -101,8 +101,8 @@ def calcCoeff():
 		print i
 	dfile.saveMatrix(colCoeff, 'data/col_coeff.txt')
 	
-	plt.xlim(50, 650)
-	plt.ylim(-400, -150)
+	#plt.xlim(50, 650)
+	#plt.ylim(-400, -150)
 	plt.show()
 
 
@@ -113,7 +113,7 @@ def truePoints():
 		print 'truePoints() >> load coeff失败'
 		return
 	
-	xLimit = [50, 650]
+	xLimit = [0, 800]
 	ptxs = []
 	ptys = []
 	
@@ -122,7 +122,7 @@ def truePoints():
 		if len(ptx) != nCol:
 			print "truePoints() >> 第%d行的交叉点数: %d<%d" %(i, len(ptx), nCol)
 		pty = [util.polyValue(x, rowCoeff[i]) for x in ptx]
-		plotFitResult(ptx, pty, rowCoeff[i], None, 'g', -50, 850)
+		plotFitResult(ptx, pty, rowCoeff[i], None, 'g')
 		ptxs.append(ptx)
 		ptys.append(pty)
 	ptfile.savePoints(ptxs, ptys, 'data/true_pts.txt')
@@ -130,13 +130,13 @@ def truePoints():
 	ptxs1 = -np.transpose(ptys)
 	ptys1 = np.transpose(ptxs)
 	for i in xrange(nCol):
-		plotFitResult(ptxs1[i], ptys1[i], colCoeff[i], 1, 'g', -150, 850)
+		plotFitResult(ptxs1[i], ptys1[i], colCoeff[i], 1, 'g')
 	
-	plt.xlim(-50, 850)
+	#plt.xlim(-50, 850)
 	#plt.ylim(-400, -150)
 	plt.show()
 
 
 if __name__ == '__main__':
-	#calcCoeff()
+	calcCoeff()
 	truePoints()
