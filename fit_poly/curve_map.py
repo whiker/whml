@@ -84,8 +84,8 @@ def tfln(tfin, tfout):
 	datax = np.transpose(np.array(np.float32(datax)))
 	datay1 = np.array(np.float32(datay1))
 	datay2 = np.array(np.float32(datay2))
-	#w1 = tfu.linearRegression(datax, datay1, 2000000, 0.001, 100)
-	w2 = tfu.linearRegression(datax, datay2, 200000, 0.001, 100)
+	#w1 = tfu.linearRegression(datax, datay1, 1000000, 0.001, 100)
+	w2 = tfu.linearRegression(datax, datay2, 100000, 0.001, 100)
 	#dfile.saveVector(w1, 'data/w31.txt')
 	dfile.saveVector(w2, 'data/w41.txt')
 	#print w1
